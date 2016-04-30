@@ -25,7 +25,10 @@ var dLoc, geojson;
 function loadDiwata() {
 $.getJSON("http://api.orbit.phl-microsat.xyz/diwata1", function(geojson){
     if (dLoc){
-    map.removeLayer(dLoc);
+    	map.removeLayer(dLoc);
+    }
+    else{
+    	map.setView(new L.LatLng(geojson.geometry.coordinates[1], geojson.geometry.coordinates[0]), 3);
     }
     dLoc = L.geoJson(geojson, {
         pointToLayer: function (feature, latlng) {
