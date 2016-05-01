@@ -46,6 +46,38 @@ var ggl = new L.Google();
 map.addLayer(ggl);
 
 loadDiwata();
+$.get("http://api.orbit.phl-microsat.xyz/tle/diwata1", function(data) {
+   alert("Disclaimer: Postions are computed based on the latest TLE of DIWATA-1:\n\n"+ data);
+});
+
+function loadPath() {
+        
+        $.getJSON("http://api.orbit.phl-microsat.xyz/diwata1-path.geojson?hours=2", function(gjson){
+            var pt = gjson.features[0]
+            var cor = pt.geometry.coordinates;
+            path = L.polyline([[cor[1],cor[0]],[cor[1],cor[0]]]);
+            map.addLayer(path);   
+            prev = cor[0];
+            var i = 1;            
+            while (i <= 200){
+            cor = gjson.features[i].geometry.coordinates;
+            cur = cor[0];
+            if(cur < prev){
+            var path = L.polyline([[cor[1],cor[0]],[cor[1],cor[0]]]);
+            map.addLayer(path);
+            }
+            else{
+            path.addLatLng([cor[1],cor[0]]);
+            }
+            i = i + 1
+            prev = cor[0]
+            }//end while   
+               
+        });
+  
+}// end load path
+
+loadPath();
 
 
 </script>
