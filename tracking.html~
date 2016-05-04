@@ -6,12 +6,10 @@
 	<script src="http://maps.google.com/maps/api/js?v=3"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-plugins/1.6.0/layer/tile/Google.min.js"></script>
 	<script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
-	<script src="https://rawgit.com/joergdietrich/Leaflet.Terminator/master/L.Terminator.js"></script>
-	<script src="leaflet-realtime.min.js"></script>
 </head>
 <body>
 	<!-- define a DIV into which the map will appear. Make it take up the whole window -->
-	<div id="info-box"></div><div style="width:100%; height:100%" id="map"></div>
+	<div style="width:100%; height:100%" id="map"></div>
 	
 <script type='text/javascript'>
 
@@ -22,7 +20,26 @@ var diwataIcon = new L.Icon({
      iconUrl: 'diwata.png'
  });
 
-var dLoc, TLE, path, lnow, lprev, lcur;
+var dLoc, geojson;
+
+function loadDiwata() {
+$.getJSON("http://api.orbit.phl-microsat.xyz/diwata1", function(geojson){
+    if (dLoc){
+    	map.removeLayer(dLoc);
+    }
+    else{
+    	map.setView(new L.LatLng(geojson.geometry.coordinates[1], geojson.geometry.coordinates[0]), 3);
+    }
+    dLoc = L.geoJson(geojson, {
+        pointToLayer: function (feature, latlng) {
+            return L.marker(latlng, {icon: diwataIcon});
+        }
+    });
+    
+    map.addLayer(dLoc);
+    setTimeout(loadDiwata, 1000); 
+});
+}
 
 var map = new L.Map('map', {center: new L.LatLng(14, 121), zoom: 1});
 var ggl = new L.Google();
@@ -30,45 +47,10 @@ var osm = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
 var ggl2 = new L.Google('TERRAIN');
 map.addLayer(ggl);
 
-var t = L.terminator();
-t.addTo(map);
-setInterval(function(){updateTerminator(t)}, 500);
-function updateTerminator(t) {
-  var t2 = L.terminator();
-  t.setLatLngs(t2.getLatLngs());
-  t.redraw();
-}
-
-diwata1 = L.realtime({
-        url: 'http://api.orbit.phl-microsat.xyz/diwata1',
-        crossOrigin: true,
-        type: 'json'
-    }, {
-        interval: 3 * 1000,
-        pointToLayer: function (feature, latlng) {
-            return L.marker(latlng, {icon: diwataIcon});
-        },
-        onEachFeature: function (feature, latlng) {
-            var infobox_content = "";
-                
-                infobox_content += "<br /> lat: " + feature.geometry.coordinates[1];
-                infobox_content += "<br /> lng: " + feature.geometry.coordinates[0];
-                infobox_content += "<br /> elevation (m): " + feature.properties.elevation;
-
-                $("#info-box").html(infobox_content);
-        }
-    }).addTo(map);
-    
-var foo = 1;  
-diwata1.on('update', function(f) {
-    //foo = diwata1.features[0];
-    if (foo == 1) {
-    map.fitBounds(diwata1.getBounds(), {maxZoom: 3});
-    foo = 0;
-    }
+loadDiwata();
+$.get("http://api.orbit.phl-microsat.xyz/tle/diwata1", function(data) {
+   alert("Disclaimer: Postions are computed based on the latest TLE of DIWATA-1:\n\n"+ data);
 });
-
-map.addControl(new L.Control.Layers( {'OSM':osm, 'Google':ggl, 'Google Terrain':ggl2}, {'Diwata-1': diwata1,'Day/Night':t}));
 
 function loadPath() {
         
@@ -92,21 +74,14 @@ function loadPath() {
             i = i + 1
             prev = cor[0]
             }//end while   
-            
+               
         });
   
 }// end load path
 
 loadPath();
 
-$.get("http://api.orbit.phl-microsat.xyz/tle/diwata1", function(data) {
-   alert("Disclaimer: Postions are computed based on the latest TLE of DIWATA-1:\n\n"+ data);
-   //process text file line by line
-   //$('#div').html(data.replace('n',''));
-});
-
-
-
+map.addControl(new L.Control.Layers( {'OSM':osm, 'Google':ggl, 'Google Terrain':ggl2}, {}));
 
 </script>
  
